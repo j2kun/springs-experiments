@@ -3,20 +3,18 @@ function innerProduct(a, b) {
 }
 
 class Vector {
-  constructor(x, y, label=1, arrowheadSize=100) {
+  constructor(x, y, arrowheadSize=100) {
     this.x = x;
     this.y = y;
-    this.label = label ? label : 1;  // labels are +/-1
     this.arrowheadSize = arrowheadSize;
+  }
 
-    this.labelToColor = {
-      '-1': 'red',
-      '1': 'green',
-    };
-    this.labelToStrokeColor = {
-      '-1': '#330000',
-      '1': '#003300',
-    };
+  subtract(other) {
+    return Vector(this.x - other.x, this.y - other.y);
+  }
+
+  scale(scalar) {
+    return Vector(this.x * scalar, this.y * scalar);
   }
 
   toString() {
@@ -36,8 +34,12 @@ class Vector {
   }
 
   normalized() {
-    let norm = Math.sqrt(this.x * this.x + this.y * this.y);
+    let norm = this.norm();
     return new Vector(this.x / norm, this.y / norm);
+  }
+
+  norm() {
+    return Math.sqrt(this.x * this.x + this.y * this.y);
   }
 
   project(w) {
