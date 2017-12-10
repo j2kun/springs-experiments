@@ -9,12 +9,16 @@ class Vector {
     this.arrowheadSize = arrowheadSize;
   }
 
+  add(other) {
+    return new Vector(this.x + other.x, this.y + other.y);
+  }
+
   subtract(other) {
-    return Vector(this.x - other.x, this.y - other.y);
+    return new Vector(this.x - other.x, this.y - other.y);
   }
 
   scale(scalar) {
-    return Vector(this.x * scalar, this.y * scalar);
+    return new Vector(this.x * scalar, this.y * scalar);
   }
 
   toString() {

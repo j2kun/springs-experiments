@@ -1,7 +1,8 @@
 import * as d3 from 'd3';
-import { Vector, innerProduct } from './geometry';
+import { Vector } from './geometry';
+import { System } from './springs';
 
-let width = 800;
+let width = 1000;
 let height = 600;
 let svg = d3.select("body").insert("svg", ":first-child")
                            .attr("width", width)
@@ -9,8 +10,15 @@ let svg = d3.select("body").insert("svg", ":first-child")
 
 let originX = width / 2;
 let originY = height / 2;
+
 let arrowheadSize = 125;
-let vectorStroke = 4;
+let vectorColor = 'black';
+let vectorStroke = 6;
+
+let beadRadius = 10;
+let beadColor = '#ccc';
+let beadStroke = 2;
+let beadStrokeColor = '#333';
 
 function fromCartesianX(x) { return originX + x; }
 function fromCartesianY(y) { return originY - y; }
@@ -18,47 +26,113 @@ function toCartesianX(x) { return x - originX; }
 function toCartesianY(y) { return -y + originY; }
 
 
-function vectorStyle(vectorSVG, id, color) {
-  vectorSVG.attr("x1", function(d) { return fromCartesianX(0); })
-           .attr("y1", function(d) { return fromCartesianY(0); })
-           .attr("x2", function(d) { return fromCartesianX(d.x); })
-           .attr("y2", function(d) { return fromCartesianY(d.y); })
-           .attr("id", id)
-           .attr("stroke", color)
-           .attr("stroke-width", vectorStroke);
-  return vectorSVG;
-}
+function createVectorsSVG(beads) {
+  let vectorContainers = svg.selectAll(".forces").data(beads).enter().append('g');
+  let vectors = vectorContainers
+           .append('line')
+           .attr("x1", function(d) { return fromCartesianX(d.position.x); })
+           .attr("y1", function(d) { return fromCartesianY(d.position.y); })
+           .attr("x2", function(d) { return fromCartesianX(d.displayForce().x); })
+           .attr("y2", function(d) { return fromCartesianY(d.displayForce().y); });
 
-function arrowheadStyle(arrowheadSVG, color) {
   let triangleSymbol = d3.symbol().size(arrowheadSize).type(d3.symbolTriangle);
-  arrowheadSVG.style("fill", color)
-              .style("cursor", "pointer")
-              .attr('d', triangleSymbol);
-  return arrowheadSVG;
-}
+  let arrowheads = vectorContainers.append('g').append('path')
+    .attr('d', triangleSymbol);
 
-
-function setupBehavior() {
-
-  function setSpanningPosition(svg) {
-    svg.attr("x1", function(d) { return fromCartesianX(d.spanningX1(width, height)); })
-       .attr("x2", function(d) { return fromCartesianX(d.spanningX2(width, height)); })
-       .attr("y1", function(d) { return fromCartesianY(d.spanningY1(width, height)); })
-       .attr("y2", function(d) { return fromCartesianY(d.spanningY2(width, height)); });
-  }
-
-  function setArrowheadPosition(svg) {
-    svg.attr('transform', function(d) {
-      let offset = d.arrowheadOffset();
-      let displayX = fromCartesianX(d.x) + offset[0];
-      let displayY = fromCartesianY(d.y) + offset[1];
+  arrowheads.attr('transform', function(d) {
+      let offset = d.acceleration.arrowheadOffset();
+      let displayForce = d.displayForce();
+      let displayX = fromCartesianX(displayForce.x) + offset[0];
+      let displayY = fromCartesianY(displayForce.y) + offset[1];
       let rotationFromVertical = offset[2];
       return ("translate(" + displayX + " " + displayY + ") " + "rotate(" + rotationFromVertical + ")");
     });
-  }
-
-  setPosition(vector, 'vector');
-  setArrowheadPosition(vectorArrowhead);
+  return {vectors: vectors, arrowheads: arrowheads};
 }
 
-setupBehavior();
+function vectorsStyle(vectorSVG) {
+  vectorSVG.vectors
+           .attr("stroke", vectorColor)
+           .attr("stroke-width", vectorStroke);
+
+  vectorSVG.arrowheads
+           .style("fill", vectorColor)
+           .style("cursor", "pointer");
+}
+
+function createBeadsSVG(beads) {
+  let circleContainers = svg.selectAll(".point").data(beads).enter().append('g');
+  let circles = circleContainers.append('circle');
+  circles.attr("cx", function (d) { return fromCartesianX(d.position.x); })
+         .attr("cy", function (d) { return fromCartesianY(d.position.y); })
+         .attr("r", beadRadius)
+         .attr("id", function(d) { return d.id; });
+
+  return circles;
+}
+
+function beadsStyle(beadsSVG) {
+  beadsSVG.attr("fill", beadColor)
+          .attr("stroke", beadStrokeColor)
+          .attr("stroke-width", beadStroke);
+  return beadsSVG;
+}
+
+function createSystemSVG(system) {
+  let beadsSVG = createBeadsSVG(system.beads);
+  beadsStyle(beadsSVG);
+
+  let vectorsSVG = createVectorsSVG(system.beads);
+  vectorsStyle(vectorsSVG);
+
+  return {beads: beadsSVG, forces: vectorsSVG};
+}
+
+function systemStyle(systemSVG) {
+
+}
+
+function updatePositions(systemSVG) {
+  let { beads, forces } = systemSVG;
+
+  beads
+    .attr("cx", function (d) { return fromCartesianX(d.position.x); })
+    .attr("cy", function (d) { return fromCartesianY(d.position.y); });
+
+  forces.vectors
+    .attr("x1", function(d) { return fromCartesianX(d.position.x); })
+    .attr("y1", function(d) { return fromCartesianY(d.position.y); })
+    .attr("x2", function(d) { return fromCartesianX(d.displayForce().x); })
+    .attr("y2", function(d) { return fromCartesianY(d.displayForce().y); });
+
+  forces.arrowheads.attr('transform', function(d) {
+    let offset = d.acceleration.arrowheadOffset();
+    let displayForce = d.displayForce();
+    let displayX = fromCartesianX(displayForce.x) + offset[0];
+    let displayY = fromCartesianY(displayForce.y) + offset[1];
+    let rotationFromVertical = offset[2];
+    return ("translate(" + displayX + " " + displayY + ") " + "rotate(" + rotationFromVertical + ")");
+  });
+}
+
+var system = new System(width, 5);
+let bead = system.beads[2];
+let initialDisplacements = [
+  0,
+  50,
+  0,
+  0,
+  0
+];
+
+for (let i = 0; i < initialDisplacements.length; i++) {
+  system.beads[i+1].position.y += initialDisplacements[i];
+}
+
+var systemSVG = createSystemSVG(system);
+systemStyle(systemSVG);
+
+window.setInterval(function() {
+  system.simulateStep();
+  updatePositions(systemSVG);
+}, 1000 / 40);
