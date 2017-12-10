@@ -11,9 +11,12 @@ let svg = d3.select("body").insert("svg", ":first-child")
 let originX = width / 2;
 let originY = height / 2;
 
-let arrowheadSize = 125;
-let vectorColor = 'black';
-let vectorStroke = 6;
+let arrowheadSize = 40;
+let vectorColor = '#333';
+let vectorStroke = 2;
+
+let stringColor = '#ccc';
+let stringWidth = 1;
 
 let beadRadius = 10;
 let beadColor = '#ccc';
@@ -60,6 +63,28 @@ function vectorsStyle(vectorSVG) {
            .style("cursor", "pointer");
 }
 
+function createStringsSVG(beads) {
+  let beadPairs = [];
+  for (let i = 0; i < beads.length - 1; i++) {
+    beadPairs.push([beads[i], beads[i+1]]);
+  }
+
+  let stringContainers = svg.selectAll(".string")
+    .data(beadPairs).enter().append('g');
+  let strings = stringContainers.append('line');
+  strings.attr("x1", function(d) { return fromCartesianX(d[0].position.x); })
+         .attr("y1", function(d) { return fromCartesianY(d[0].position.y); })
+         .attr("x2", function(d) { return fromCartesianX(d[1].position.x); })
+         .attr("y2", function(d) { return fromCartesianY(d[1].position.y); });
+
+  return strings;
+}
+
+function stringsStyle(stringsSVG) {
+  stringsSVG.attr("stroke", stringColor)
+            .attr("stroke-width", stringWidth);
+}
+
 function createBeadsSVG(beads) {
   let circleContainers = svg.selectAll(".point").data(beads).enter().append('g');
   let circles = circleContainers.append('circle');
@@ -85,15 +110,14 @@ function createSystemSVG(system) {
   let vectorsSVG = createVectorsSVG(system.beads);
   vectorsStyle(vectorsSVG);
 
-  return {beads: beadsSVG, forces: vectorsSVG};
-}
+  let stringsSVG = createStringsSVG(system.beads);
+  stringsStyle(stringsSVG);
 
-function systemStyle(systemSVG) {
-
+  return {beads: beadsSVG, forces: vectorsSVG, strings: stringsSVG};
 }
 
 function updatePositions(systemSVG) {
-  let { beads, forces } = systemSVG;
+  let { beads, forces, strings } = systemSVG;
 
   beads
     .attr("cx", function (d) { return fromCartesianX(d.position.x); })
@@ -105,6 +129,11 @@ function updatePositions(systemSVG) {
     .attr("x2", function(d) { return fromCartesianX(d.displayForce().x); })
     .attr("y2", function(d) { return fromCartesianY(d.displayForce().y); });
 
+  strings.attr("x1", function(d) { return fromCartesianX(d[0].position.x); })
+         .attr("y1", function(d) { return fromCartesianY(d[0].position.y); })
+         .attr("x2", function(d) { return fromCartesianX(d[1].position.x); })
+         .attr("y2", function(d) { return fromCartesianY(d[1].position.y); });
+
   forces.arrowheads.attr('transform', function(d) {
     let offset = d.acceleration.arrowheadOffset();
     let displayForce = d.displayForce();
@@ -115,7 +144,7 @@ function updatePositions(systemSVG) {
   });
 }
 
-var system = new System(width, 5);
+var system = new System(width, 10);
 let bead = system.beads[2];
 let initialDisplacements = [
   0,
@@ -130,7 +159,6 @@ for (let i = 0; i < initialDisplacements.length; i++) {
 }
 
 var systemSVG = createSystemSVG(system);
-systemStyle(systemSVG);
 
 window.setInterval(function() {
   system.simulateStep();
