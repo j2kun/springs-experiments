@@ -59,8 +59,7 @@ function vectorsStyle(vectorSVG) {
            .attr("stroke-width", vectorStroke);
 
   vectorSVG.arrowheads
-           .style("fill", vectorColor)
-           .style("cursor", "pointer");
+           .style("fill", vectorColor);
 }
 
 function createStringsSVG(beads) {
@@ -144,7 +143,7 @@ function updatePositions(systemSVG) {
   });
 }
 
-var system = new System(width, 10);
+var system = new System(width, 5);
 let bead = system.beads[2];
 let initialDisplacements = [
   0,

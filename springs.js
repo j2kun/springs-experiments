@@ -46,7 +46,7 @@ class System {
   // Coordinate system has (0,0) in the center.
   constructor(width, numBeads=10, equilibriumLength=5) {
     this.beads = [];
-    this.distanceBetween = 50;
+    this.distanceBetween = 150;
     this.equilibriumLength = equilibriumLength;
     let leftEndpoint = [-width / 2 + 25, 0];
     // add two extra "special" beads for the two ends of the string
