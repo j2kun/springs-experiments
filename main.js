@@ -143,9 +143,46 @@ function updatePositions(systemSVG) {
   });
 }
 
+function resetPositions(displacements) {
+  for (let i = 0; i < displacements.length; i++) {
+    system.beads[i+1].position.y = displacements[i];
+    system.beads[i+1].velocity.x = 0;
+    system.beads[i+1].velocity.y = 0;
+    system.beads[i+1].acceleration.x = 0;
+    system.beads[i+1].acceleration.y = 0;
+  }
+
+  if (timer) {
+    window.clearInterval(timer);
+  }
+  timer = window.setInterval(function() {
+    system.simulateStep();
+    updatePositions(systemSVG);
+  }, 1000 / 40);
+}
+
+function resetPositionsButton() {
+  let inputNodes = d3.selectAll("input").nodes();
+  let displacements = [];
+  for (let node of inputNodes) {
+    displacements.push(parseInt(node.value));
+  }
+  resetPositions(displacements);
+}
+
+function resetInputs(values) {
+  let inputNodes = d3.selectAll("input").nodes();
+  for (let i = 0; i < values.length; i++) {
+    inputNodes[i].value = values[i];
+  }
+  resetPositions(values);
+}
+
+
 var system = new System(width, 5);
-let bead = system.beads[2];
-let initialDisplacements = [
+var timer = null;  // timer that controls system evolution
+var systemSVG = createSystemSVG(system);
+var initialDisplacements = [
   0,
   50,
   0,
@@ -153,13 +190,23 @@ let initialDisplacements = [
   0
 ];
 
-for (let i = 0; i < initialDisplacements.length; i++) {
-  system.beads[i+1].position.y += initialDisplacements[i];
+var eigs = [
+  [29, 50, 58, 50, 29],
+  [-50, -50, 0, 50, 50],
+  [58, 0, -58, 0, 58],
+  [-50, 50, 0, -50, 50],
+  [-29, 50, -58, 50, -29]
+];
+
+function initialize() {
+  d3.select("#reset_positions").on("click", resetPositionsButton);
+  d3.select("#eig1").on("click", () => resetInputs(eigs[0]));
+  d3.select("#eig2").on("click", () => resetInputs(eigs[1]));
+  d3.select("#eig3").on("click", () => resetInputs(eigs[2]));
+  d3.select("#eig4").on("click", () => resetInputs(eigs[3]));
+  d3.select("#eig5").on("click", () => resetInputs(eigs[4]));
+  resetPositions(initialDisplacements);
 }
 
-var systemSVG = createSystemSVG(system);
-
-window.setInterval(function() {
-  system.simulateStep();
-  updatePositions(systemSVG);
-}, 1000 / 40);
+window.d3 = d3;
+window.onload = initialize;

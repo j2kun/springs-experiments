@@ -21,6 +21,7 @@ class Bead {
     this.acceleration = this.force.scale(1.0 / this.mass);
     this.velocity = this.velocity.add(this.acceleration);
     this.position = this.position.add(this.velocity);
+    // try just updating the vertical component of position
     // this.position = this.position.add(new Vector(0, this.velocity.y));
   }
 
